@@ -14,7 +14,6 @@ from threading import Thread
 import requests
 from pygtail import Pygtail
 from basescript import BaseScript
-#import logagg
 
 HOST = socket.gethostname()
 MPUB_URL = 'http://%s/mpub?topic=%s'
