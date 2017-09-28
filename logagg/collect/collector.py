@@ -35,12 +35,12 @@ class LogCollector(BaseScript):
     SLEEP_TIME = 1
     QUEUE_TIMEOUT = 1
 
-    def define_args(self, parser):
-        super(LogCollector, self).define_args(parser)
-        parser.add_argument('--file', nargs='+', help='Provide absolute path of logfile including module name and function name, '
-                'eg: /var/log/nginx/access.log:logagg.collect.handlers.nginx_access')
-        parser.add_argument('--nsqtopic', help='Topic name to publish messages. Ex: logs_and_metrics')
-        parser.add_argument('--nsqd-http-address', default='localhost:4151', help='nsqd http address where we send the messages')
+    def __init__(self, log, args, _file, nsqtopic, nsqd_http_address):
+        self.log = log
+        self.args = args
+        self.file = _file
+        self.nsqtopic = nsqtopic
+        self.nsqd_http_address = nsqd_http_address
 
     def _load_handler_fn(self, imp):
         module_name, fn_name = imp.split('.', 1)
@@ -102,7 +102,7 @@ class LogCollector(BaseScript):
     def send_to_nsq(self):
         msgs = []
         last_push_ts = time.time()
-        url = MPUB_URL % (self.args.nsqd_http_address, self.args.nsqtopic)
+        url = MPUB_URL % (self.nsqd_http_address, self.nsqtopic)
 
         while 1:
             read_from_q = False
@@ -152,7 +152,7 @@ class LogCollector(BaseScript):
     def _prepare_log_files_list(self):
         log_files = []
 
-        for f in self.args.file:
+        for f in self.file:
             fpattern, handler = f.split(':', 1)
 
             try:
@@ -172,7 +172,7 @@ class LogCollector(BaseScript):
 
         return log_files
 
-    def run(self):
+    def start(self):
         self.queue = Queue.Queue(maxsize=self.QUEUE_MAX_SIZE)
         self.session = requests.Session()
 
@@ -188,9 +188,3 @@ class LogCollector(BaseScript):
         th.start()
 
         th.join()
-
-def main():
-    LogCollector().start()
-
-if __name__ == '__main__':
-    main()
